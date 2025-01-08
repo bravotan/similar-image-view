@@ -7,6 +7,7 @@ from PyQt6.QtGui import *
 from PIL import Image
 import imagehash
 from tools.image_hash_connection import Connection as IHC
+from tools.macos_util import open_in_finder
 
 
 class Item:
@@ -80,9 +81,10 @@ class CustomListView(QListView):
         #self.setDropIndicatorShown(True)
         self.setAcceptDrops(True)
         self.contextMenuItems = [
-            (self.copyPath,),
+            #(self.copyPath, self.openContainFolder),
+            (self.openContainFolder, ),
         ]
-    
+
     # def mousePressEvent(self, event: QMouseEvent):
     #     # クリック時に選択をクリア
     #     if event.button() == Qt.MouseButton.LeftButton:
@@ -91,13 +93,23 @@ class CustomListView(QListView):
     #     # 通常の処理も継続
     #     super().mousePressEvent(event)
 
-    def copyPath(self):
-        "Copy file path"
+    def __getSelectedPath(self):
         indexes = self.selectedIndexes()
         if len(indexes) == 0:
             return
         index = indexes[0]
-        print(self.model().items[index.row()].path)
+        return self.model().items[index.row()].path
+
+
+    def copyPath(self):
+        "Copy file path"
+        QApplication.clipboard().setText(self.__getSelectedPath())
+
+
+    def openContainFolder(self):
+        "Open contain folder"
+        open_in_finder(self.__getSelectedPath())
+
 
     def contextMenuEvent(self, event):
         contextMenu = QMenu(self)
@@ -115,7 +127,7 @@ class CustomListView(QListView):
                 a = contextMenu.addAction(func.__doc__)
                 a.triggered.connect(func)
                 #a.setEnabled(False)
-            
+
         contextMenu.exec(event.globalPos())
 
     def dragEnterEvent(self, event):
@@ -123,7 +135,7 @@ class CustomListView(QListView):
             event.accept()
         else:
             event.ignore()
-        
+
     def dragMoveEvent(self, event):
         event.accept()
 
@@ -138,13 +150,13 @@ class CustomListView(QListView):
                 self.clearSelection()
                 model.fetch_hash(ihash)
                 model.dataChanged.emit(model.index(0, 0), model.index(len(model.items) - 1, 0))
-                
+
                 break
             event.accept()
         else:
             event.ignore()
 
-       
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
